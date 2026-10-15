@@ -1,5 +1,6 @@
 import { getAuth } from "firebase-admin/auth";
 import { app } from "../config/firebase.js";
+import User from "../models/user.model.js";
 
 export const login = async (req, res) => {
     const { token } = req.body ?? {};
@@ -9,11 +10,20 @@ export const login = async (req, res) => {
 
     try {
         const decodedToken = await getAuth(app).verifyIdToken(token);
-        return res.status(200).json({
-            uid: decodedToken.uid,
-            email: decodedToken.email ?? null,
-            emailVerified: decodedToken.email_verified ?? false,
-        });
+        //decodeToken contains the decoded information from the Firebase ID token, such as the user's UID, email, and other claims. You can use this information to authenticate the user in your application.  
+        const userRecord = await getAuth(app).getUser(decodedToken.uid);
+        const user=await User.findOne({ uid: decodedToken.uid });
+        if(!user){
+            user=await User.create({
+                firebaseUid:decodedToken.uid,
+                name:userRecord.displayName ?? "Anonymous",
+                email:userRecord.email ?? null
+            });
+        }
+        // to login for 7 days
+        const sessionId=crypto.randomUUID(); 
+        res.cookie("session", sessionId, { maxAge: 7 * 24 * 60 * 60 * 1000, httpOnly: true,sameSite: "strict" });
+        return res.status(200).json({ message: "Login successful", user });
     } catch (error) {
         if (
             [

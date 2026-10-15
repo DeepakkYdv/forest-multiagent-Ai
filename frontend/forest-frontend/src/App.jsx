@@ -2,10 +2,21 @@ import { useState } from 'react'
 import './App.css'
 import { auth, googleProvider } from '../utils/firebase'
 import { signInWithPopup } from 'firebase/auth'
+import api from '../utils/axios'
+import { toast } from 'react-hot-toast'
 
 function App() {
   const [passwordVisible, setPasswordVisible] = useState(false)
   const [notice, setNotice] = useState('')
+  const handleLogin=async (token) => {
+  try{
+    const data  = await api.post('/auth/login', { token })
+    console.log('Login successful:', data)
+  }catch (error) {
+    console.error('Error during login:', error)
+    setNotice('An error occurred during login. Please try again.')
+  }
+}
 
   function handleSubmit(event) {
     event.preventDefault()
@@ -13,8 +24,8 @@ function App() {
   }
   const handleLoginWithGoogle = async () =>{
     const data = await signInWithPopup(auth, googleProvider);
-    console.log(data)
-
+    await handleLogin(data.user.accessToken);
+    toast.success('Login successful!')
   }
 
   return (
