@@ -1,7 +1,7 @@
 import { getAuth } from "firebase-admin/auth";
 import { app } from "../config/firebase.js";
 import User from "../models/user.model.js";
-import redis from "../../../shared/redis/redish.js";
+import redis from "../../../shared/redis/redis.js";
 
 export const login = async (req, res) => {
     const { token } = req.body ?? {};
@@ -25,13 +25,18 @@ export const login = async (req, res) => {
         }
         // to login for 7 days
         const sessionId = crypto.randomUUID();
-        redis.set(`session-${sessionId}`, JSON.stringify({ 
+        await redis.set(`session-${sessionId}`, JSON.stringify({
             userId:user._id,
             name: user.name,
             email: user.email,
             avatar: user.avatar
         }), "EX", 7 * 24 * 60 * 60); // Set session in Redis with a 7-day expiration
-        res.cookie("session", sessionId, { maxAge: 7 * 24 * 60 * 60 * 1000, httpOnly: true, sameSite: "strict" });
+        res.cookie("session", sessionId, {
+            maxAge: 7 * 24 * 60 * 60 * 1000,
+            httpOnly: true,
+            sameSite: "strict",
+            secure: process.env.NODE_ENV === "production",
+        });
         return res.status(200).json({ message: "Login successful", user });
     } catch (error) {
         if (

@@ -1,10 +1,12 @@
-import { useState } from 'react'
+import { useEffect, useState } from 'react'
 import { useNavigate } from 'react-router-dom'
 import '../App.css'
 import { auth, googleProvider } from '../../utils/firebase'
 import { signInWithPopup } from 'firebase/auth'
-import api from '../../utils/axios'
 import { toast } from 'react-hot-toast'
+import { useLogin } from '../features/auth/hooks/useLogin'
+import { useCurrentUser } from '../features/auth/hooks/useCurrentUser'
+import { getApiErrorMessage } from '../lib/api-client'
 import LoginForm from '../components/auth/LoginForm'
 import RegisterForm from '../components/auth/RegisterForm'
 
@@ -13,21 +15,25 @@ function LoginPage() {
   const [notice, setNotice] = useState('')
   const [isSigningIn, setIsSigningIn] = useState(false)
   const navigate = useNavigate()
+  const loginMutation = useLogin()
+  const currentUser = useCurrentUser()
+
+  useEffect(() => {
+    if (currentUser.data) navigate('/', { replace: true })
+  }, [currentUser.data, navigate])
 
   const handleGoogleLogin = async () => {
     setIsSigningIn(true)
-
     try {
       const result = await signInWithPopup(auth, googleProvider)
       const token = await result.user.getIdToken()
-
-      await api.post('/auth/login', { token })
+      await loginMutation.mutateAsync(token)
       toast.success('Login successful!')
       navigate('/', { replace: true })
     } catch (error) {
-      console.error('Google sign-in failed:', error)
-      setNotice('Unable to sign in. Please try again.')
-      toast.error('Unable to sign in. Please try again.')
+      const message = error.response ? getApiErrorMessage(error) : 'Unable to sign in. Please try again.'
+      setNotice(message)
+      toast.error(message)
     } finally {
       setIsSigningIn(false)
     }
@@ -35,7 +41,7 @@ function LoginPage() {
 
   const handleSubmit = (event) => {
     event.preventDefault()
-    setNotice('Email registration and sign-in are not connected yet.')
+    setNotice('Email sign-in and registration are not available yet. Continue with Google.')
   }
 
   const switchView = (nextView) => {
@@ -89,7 +95,7 @@ function LoginPage() {
           {view === 'login' ? (
             <LoginForm
               onGoogleLogin={handleGoogleLogin}
-              isSigningIn={isSigningIn}
+              isSigningIn={isSigningIn || loginMutation.isPending}
               notice={notice}
               onSubmit={handleSubmit}
               onShowRegister={() => switchView('register')}
@@ -98,7 +104,7 @@ function LoginPage() {
             <RegisterForm
               notice={notice}
               onGoogleLogin={handleGoogleLogin}
-              isSigningIn={isSigningIn}
+              isSigningIn={isSigningIn || loginMutation.isPending}
               onSubmit={handleSubmit}
               onShowLogin={() => switchView('login')}
             />
