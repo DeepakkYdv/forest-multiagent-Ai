@@ -1,57 +1,61 @@
-import { useEffect, useState } from 'react'
-import { useNavigate } from 'react-router-dom'
-import '../App.css'
-import { auth, googleProvider } from '../../utils/firebase'
-import { signInWithPopup } from 'firebase/auth'
-import { toast } from 'react-hot-toast'
-import { useLogin } from '../features/auth/hooks/useLogin'
-import { useCurrentUser } from '../features/auth/hooks/useCurrentUser'
-import { getApiErrorMessage } from '../lib/api-client'
-import LoginForm from '../components/auth/LoginForm'
-import RegisterForm from '../components/auth/RegisterForm'
+import { useEffect, useState } from "react";
+import { useNavigate } from "react-router-dom";
+import "../App.css";
+import { auth, googleProvider } from "../../utils/firebase";
+import { signInWithPopup } from "firebase/auth";
+import { toast } from "react-hot-toast";
+import { useLogin } from "../features/auth/hooks/useLogin";
+import { useCurrentUser } from "../features/auth/hooks/useCurrentUser";
+import { getApiErrorMessage } from "../lib/api-client";
+import LoginForm from "../components/auth/LoginForm";
+import RegisterForm from "../components/auth/RegisterForm";
 
 function LoginPage() {
-  const [view, setView] = useState('login')
-  const [notice, setNotice] = useState('')
-  const [isSigningIn, setIsSigningIn] = useState(false)
-  const navigate = useNavigate()
-  const loginMutation = useLogin()
-  const currentUser = useCurrentUser()
+  const [view, setView] = useState("login");
+  const [notice, setNotice] = useState("");
+  const [isSigningIn, setIsSigningIn] = useState(false);
+  const navigate = useNavigate();
+  const loginMutation = useLogin();
+  const currentUser = useCurrentUser();
 
   useEffect(() => {
-    if (currentUser.data) navigate('/', { replace: true })
-  }, [currentUser.data, navigate])
+    if (currentUser.data) navigate("/", { replace: true });
+  }, [currentUser.data, navigate]);
 
   const handleGoogleLogin = async () => {
-    setIsSigningIn(true)
+    setIsSigningIn(true);
     try {
-      const result = await signInWithPopup(auth, googleProvider)
-      const token = await result.user.getIdToken()
-      await loginMutation.mutateAsync(token)
-      toast.success('Login successful!')
-      navigate('/', { replace: true })
+      const result = await signInWithPopup(auth, googleProvider);
+      const token = await result.user.getIdToken();
+      await loginMutation.mutateAsync(token);
+      toast.success("Login successful!");
+      navigate("/", { replace: true });
     } catch (error) {
-      const message = error.response ? getApiErrorMessage(error) : 'Unable to sign in. Please try again.'
-      setNotice(message)
-      toast.error(message)
+      const message = error.response
+        ? getApiErrorMessage(error)
+        : "Unable to sign in. Please try again.";
+      setNotice(message);
+      toast.error(message);
     } finally {
-      setIsSigningIn(false)
+      setIsSigningIn(false);
     }
-  }
+  };
 
   const handleSubmit = (event) => {
-    event.preventDefault()
-    setNotice('Email sign-in and registration are not available yet. Continue with Google.')
-  }
+    event.preventDefault();
+    setNotice(
+      "Email sign-in and registration are not available yet. Continue with Google.",
+    );
+  };
 
   const switchView = (nextView) => {
-    setNotice('')
-    setView(nextView)
-  }
+    setNotice("");
+    setView(nextView);
+  };
 
   return (
     <main className="login-page">
-<section className="story-panel" aria-label="Forest workspace">
+      <section className="story-panel" aria-label="Forest workspace">
         <div className="story-shade" />
         <header className="brand-lockup">
           <span className="brand-mark" aria-hidden="true">
@@ -88,17 +92,19 @@ function LoginPage() {
       <section className="form-panel" aria-labelledby="welcome-title">
         <div className="form-wrap">
           <div className="mobile-brand brand-lockup">
-            <span className="brand-mark" aria-hidden="true">🌲</span>
+            <span className="brand-mark" aria-hidden="true">
+              🌲
+            </span>
             <span>forest</span>
           </div>
 
-          {view === 'login' ? (
+          {view === "login" ? (
             <LoginForm
               onGoogleLogin={handleGoogleLogin}
               isSigningIn={isSigningIn || loginMutation.isPending}
               notice={notice}
               onSubmit={handleSubmit}
-              onShowRegister={() => switchView('register')}
+              onShowRegister={() => switchView("register")}
             />
           ) : (
             <RegisterForm
@@ -106,7 +112,7 @@ function LoginPage() {
               onGoogleLogin={handleGoogleLogin}
               isSigningIn={isSigningIn || loginMutation.isPending}
               onSubmit={handleSubmit}
-              onShowLogin={() => switchView('login')}
+              onShowLogin={() => switchView("login")}
             />
           )}
         </div>
@@ -120,7 +126,7 @@ function LoginPage() {
         </footer>
       </section>
     </main>
-  )
+  );
 }
 
-export default LoginPage
+export default LoginPage;

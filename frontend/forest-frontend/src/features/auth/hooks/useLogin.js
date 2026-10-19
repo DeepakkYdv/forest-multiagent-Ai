@@ -7,8 +7,11 @@ export function useLogin() {
   return useMutation({
     mutationFn: login,
     onSuccess: (result) => {
-      if (result.user) queryClient.setQueryData(authKeys.currentUser(), result.user);
-      else queryClient.invalidateQueries({ queryKey: authKeys.currentUser() });
+      if (result.user) {
+        queryClient.setQueryData(authKeys.currentUser(), result.user);
+      } else {
+        queryClient.invalidateQueries({ queryKey: authKeys.currentUser() });
+      }
     },
   });
 }
