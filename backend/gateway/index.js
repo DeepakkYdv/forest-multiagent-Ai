@@ -31,12 +31,13 @@ app.use(
   "/api/v1/user",
   protect, getCurrentuser)
 
-
 app.use("/api/v1/chat",protect,
   proxyWithHeader(process.env.CHAT_SERVICE_URL)
 );
 
-
+app.use("/api/v1/agent",protect,
+  proxyWithHeader(process.env.AGENT_SERVICE_URL)
+);
 
 app.listen(PORT, () => {
   console.log(`gateway started at ${PORT}`)
