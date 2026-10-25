@@ -32,15 +32,15 @@ export const updateConversation = async (req, res) => {
 export const getConversation = async (req, res) => {
     try {
         const userId = req.headers["x-user-id"];
-        console.log("User ID from header:", userId);
         if (!userId) {
             return res.status(400).json({ message: "User ID is required in the header" });
         }
-        const conversation = (await Conversation.find({ userId })).sort({
+        const conversation = await Conversation.find({ userId }).sort({
             updatedAt: -1
         });
         res.status(200).json(conversation);
     } catch (error) {
+        console.log("error", error)
         res.status(500).json({ message: "Error getting conversation", error });
     }
 }
@@ -52,6 +52,9 @@ export const saveMessage = async (req, res) => {
             return res.status(400).json({ message: "User ID is required in the header" });
         }
         const { content, role, conversationId } = req.body;
+        if (!conversationId) {
+            return res.status(400).json({ message: "conversationId required" })
+        }
         const message = await Message.create({ content, role, conversationId });
         res.status(201).json(message);
     } catch (error) {

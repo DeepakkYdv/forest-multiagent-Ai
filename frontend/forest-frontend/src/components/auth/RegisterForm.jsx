@@ -4,6 +4,7 @@ function RegisterForm({
   onShowLogin,
   onGoogleLogin,
   isSigningIn,
+  isRegistering,
 }) {
   return (
     <>
@@ -16,7 +17,7 @@ function RegisterForm({
         className="google-button"
         type="button"
         onClick={onGoogleLogin}
-        disabled={isSigningIn}
+        disabled={isSigningIn || isRegistering}
       >
         <svg className="google-mark" viewBox="0 0 48 48" aria-hidden="true">
           <path
@@ -70,11 +71,12 @@ function RegisterForm({
           placeholder="Create a password"
           type="password"
           minLength={8}
+          maxLength={128}
           required
         />
 
-        <button className="submit-button" type="submit">
-          <span>Create account</span>
+        <button className="submit-button" type="submit" disabled={isRegistering}>
+          <span>{isRegistering ? "Creating account…" : "Create account"}</span>
         </button>
 
         {notice && (

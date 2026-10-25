@@ -1,12 +1,11 @@
 import express from "express";
 import cors from "cors";
-import dotenv from "dotenv";
+import "dotenv/config";
 import cookieParser from "cookie-parser";
 import proxy from "express-http-proxy";
 import protect from "./middlewere/protect.js";
 import getCurrentuser from "./controllers/user.controller.js";
 import proxyWithHeader from "./lib/proxywithheader.js";
-dotenv.config();
 
 const app = express();
 const PORT = process.env.PORT || 8000;

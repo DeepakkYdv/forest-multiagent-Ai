@@ -4,9 +4,10 @@ import proxy from 'express-http-proxy'
 const proxyWithHeader = (targetUrl) => {
     return proxy(targetUrl, ({
         proxyReqOptDecorator: (proxyReqOpts, srcReq) => {
-            if (srcReq.user && srcReq.userData.userId) {
+            if (srcReq.userData?.userId) {
                 proxyReqOpts.headers["x-user-id"] = srcReq.userData.userId; // custom headers
             }
+            return proxyReqOpts;
         }
     }))
 };

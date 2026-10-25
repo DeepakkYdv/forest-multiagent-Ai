@@ -1,4 +1,6 @@
 import WorkspaceIcon from "./WorkspaceIcon";
+import ProfileMenu from "./ProfileMenu";
+import ActionDropdown from "./ActionDropdown";
 
 export default function ConversationSidebar({
   conversations,
@@ -6,11 +8,18 @@ export default function ConversationSidebar({
   user,
   onNewChat,
   onSelectConversation,
+  onConversationAction,
   onLogout,
+  onOpenSettings,
   isLoggingOut,
   logoutError,
   isOpen,
   onClose,
+  isLoadingConversations,
+  conversationsError,
+  onRetryConversations,
+  isCreatingConversation,
+  conversationError,
 }) {
   return (
     <aside
@@ -34,11 +43,21 @@ export default function ConversationSidebar({
         </button>
       </div>
 
-      <button type="button" className="new-chat-button" onClick={onNewChat}>
+      <button
+        type="button"
+        className="new-chat-button"
+        onClick={onNewChat}
+        disabled={isCreatingConversation}
+      >
         <WorkspaceIcon name="add" size={17} />
-        <span>New conversation</span>
+        <span>{isCreatingConversation ? "Creating…" : "New conversation"}</span>
         <span className="new-chat-shortcut">⌘ K</span>
       </button>
+      {conversationError && (
+        <p className="workspace-error" role="alert">
+          {conversationError}
+        </p>
+      )}
 
       <div className="conversation-list-heading">
         <span>Recent conversations</span>
@@ -52,29 +71,89 @@ export default function ConversationSidebar({
         </button>
       </div>
       <nav className="conversation-list" aria-label="Recent conversations">
-        {conversations.map((conversation, index) => (
-          <div className="conversation-group" key={conversation.id}>
-            {(index === 0 || conversation.time !== conversations[index - 1].time) && (
-              <p className="conversation-date">{conversation.time}</p>
-            )}
-            <button
-              type="button"
-              className={`conversation-item ${activeConversationId === conversation.id ? "is-selected" : ""}`}
-              onClick={() => onSelectConversation(conversation.id)}
-              aria-current={
-                activeConversationId === conversation.id ? "page" : undefined
-              }
-            >
-              <WorkspaceIcon name="message" size={16} />
-              <span>{conversation.title}</span>
-              <WorkspaceIcon
-                name="dots"
-                size={17}
-                className="conversation-more"
-              />
+        {isLoadingConversations && <p>Loading conversations…</p>}
+        {conversationsError && (
+          <div className="workspace-error" role="alert">
+            <p>{conversationsError}</p>
+            <button type="button" className="workspace-button" onClick={onRetryConversations}>
+              Try again
             </button>
           </div>
-        ))}
+        )}
+        {!isLoadingConversations && !conversationsError && conversations.length === 0 && (
+          <p>No conversations yet. Start a new one above.</p>
+        )}
+        {conversations.map((conversation, index) => {
+          const groupName = conversation.pinned ? "Pinned" : conversation.time;
+          const previousGroup = conversations[index - 1]?.pinned
+            ? "Pinned"
+            : conversations[index - 1]?.time;
+          const menuItems = [
+            {
+              title: "Rename",
+              icon: "rename",
+              onClick: () => onConversationAction("rename", conversation),
+            },
+            {
+              title: conversation.pinned ? "Unpin" : "Pin",
+              icon: "pin",
+              onClick: () => onConversationAction("pin", conversation),
+            },
+            {
+              title: "Share",
+              icon: "share",
+              dividerBefore: true,
+              onClick: () => onConversationAction("share", conversation),
+            },
+            {
+              title: "Archive",
+              icon: "archive",
+              dividerBefore: true,
+              onClick: () => onConversationAction("archive", conversation),
+            },
+            {
+              title: "Delete",
+              icon: "trash",
+              destructive: true,
+              onClick: () => onConversationAction("delete", conversation),
+            },
+          ];
+
+          return (
+            <div className="conversation-group" key={conversation.id}>
+              {groupName !== previousGroup && (
+                <p className="conversation-date">{groupName}</p>
+              )}
+              <div
+                className={`conversation-row ${activeConversationId === conversation.id ? "is-selected" : ""}`}
+              >
+                <button
+                  type="button"
+                  className="conversation-item"
+                  onClick={() => onSelectConversation(conversation.id)}
+                  aria-current={
+                    activeConversationId === conversation.id ? "page" : undefined
+                  }
+                >
+                  <WorkspaceIcon name="message" size={16} />
+                  <span>{conversation.title}</span>
+                  {conversation.pinned && (
+                    <WorkspaceIcon
+                      name="pin"
+                      size={13}
+                      className="conversation-pinned-icon"
+                    />
+                  )}
+                </button>
+                <ActionDropdown
+                  className="conversation-more"
+                  label={`Actions for ${conversation.title}`}
+                  items={menuItems}
+                />
+              </div>
+            </div>
+          );
+        })}
       </nav>
 
       <div className="sidebar-bottom">
@@ -83,22 +162,12 @@ export default function ConversationSidebar({
             {logoutError}
           </p>
         )}
-        <button
-          type="button"
-          className="profile-button"
-          onClick={onLogout}
-          disabled={isLoggingOut}
-          aria-label={`Sign out${user.name ? `, signed in as ${user.name}` : ""}`}
-        >
-          <span className="profile-avatar">
-            {(user.name || user.email || "U").charAt(0).toUpperCase()}
-          </span>
-          <span className="profile-copy">
-            <strong>{user.name || "Your account"}</strong>
-            <span>{isLoggingOut ? "Signing out…" : user.email}</span>
-          </span>
-          <WorkspaceIcon name="arrowDown" size={16} />
-        </button>
+        <ProfileMenu
+          user={user}
+          onOpenSettings={onOpenSettings}
+          onLogout={onLogout}
+          isLoggingOut={isLoggingOut}
+        />
       </div>
     </aside>
   );

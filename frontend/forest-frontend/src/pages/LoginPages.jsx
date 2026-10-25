@@ -5,6 +5,7 @@ import { auth, googleProvider } from "../../utils/firebase";
 import { signInWithPopup } from "firebase/auth";
 import { toast } from "react-hot-toast";
 import { useLogin } from "../features/auth/hooks/useLogin";
+import { useRegister } from "../features/auth/hooks/useRegister";
 import { useCurrentUser } from "../features/auth/hooks/useCurrentUser";
 import { getApiErrorMessage } from "../lib/api-client";
 import LoginForm from "../components/auth/LoginForm";
@@ -16,6 +17,7 @@ function LoginPage() {
   const [isSigningIn, setIsSigningIn] = useState(false);
   const navigate = useNavigate();
   const loginMutation = useLogin();
+  const registerMutation = useRegister();
   const currentUser = useCurrentUser();
 
   useEffect(() => {
@@ -41,11 +43,46 @@ function LoginPage() {
     }
   };
 
-  const handleSubmit = (event) => {
+  const handleLoginSubmit = async (event) => {
     event.preventDefault();
-    setNotice(
-      "Email sign-in and registration are not available yet. Continue with Google.",
-    );
+    setNotice("");
+    const formData = new FormData(event.currentTarget);
+    const credentials = {
+      email: formData.get("email"),
+      password: formData.get("password"),
+    };
+
+    try {
+      await loginMutation.mutateAsync(credentials);
+      toast.success("Login successful!");
+      navigate("/", { replace: true });
+    } catch (error) {
+      const message = getApiErrorMessage(error);
+      setNotice(message);
+      toast.error(message);
+    }
+  };
+
+  const handleRegisterSubmit = async (event) => {
+    event.preventDefault();
+    setNotice("");
+
+    const formData = new FormData(event.currentTarget);
+    const user = {
+      name: formData.get("name"),
+      email: formData.get("email"),
+      password: formData.get("password"),
+    };
+
+    try {
+      await registerMutation.mutateAsync(user);
+      toast.success("Registration successful!");
+      navigate("/", { replace: true });
+    } catch (error) {
+      const message = getApiErrorMessage(error);
+      setNotice(message);
+      toast.error(message);
+    }
   };
 
   const switchView = (nextView) => {
@@ -103,7 +140,7 @@ function LoginPage() {
               onGoogleLogin={handleGoogleLogin}
               isSigningIn={isSigningIn || loginMutation.isPending}
               notice={notice}
-              onSubmit={handleSubmit}
+              onSubmit={handleLoginSubmit}
               onShowRegister={() => switchView("register")}
             />
           ) : (
@@ -111,7 +148,8 @@ function LoginPage() {
               notice={notice}
               onGoogleLogin={handleGoogleLogin}
               isSigningIn={isSigningIn || loginMutation.isPending}
-              onSubmit={handleSubmit}
+              isRegistering={registerMutation.isPending}
+              onSubmit={handleRegisterSubmit}
               onShowLogin={() => switchView("login")}
             />
           )}

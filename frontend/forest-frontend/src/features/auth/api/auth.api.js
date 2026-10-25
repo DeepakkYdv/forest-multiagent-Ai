@@ -1,7 +1,15 @@
 import apiClient from "../../../lib/api-client";
 
-export const login = async (firebaseIdToken) => {
-  const { data } = await apiClient.post("/auth/login", { token: firebaseIdToken });
+export const register = async (user) => {
+  const { data } = await apiClient.post("/auth/register", user);
+  return data;
+};
+
+export const login = async (credentials) => {
+  const body = typeof credentials === "string"
+    ? { token: credentials }
+    : credentials;
+  const { data } = await apiClient.post("/auth/login", body);
   return data;
 };
 
@@ -12,6 +20,6 @@ export const logout = async () => {
 };
 
 export const getCurrentUser = async () => {
-  const { data } = await apiClient.get("/api/user");
+  const { data } = await apiClient.get("/user");
   return data.user;
 };

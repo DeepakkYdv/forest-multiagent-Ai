@@ -122,8 +122,8 @@ function LoginForm({
           <span>Keep me signed in</span>
         </label>
 
-        <button className="submit-button" type="submit">
-          <span>Sign in</span>
+        <button className="submit-button" type="submit" disabled={isSigningIn}>
+          <span>{isSigningIn ? "Signing in…" : "Sign in"}</span>
         </button>
 
         {notice && (

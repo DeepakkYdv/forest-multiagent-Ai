@@ -1,5 +1,9 @@
 import { useRef, useState } from "react";
 import WorkspaceIcon from "./WorkspaceIcon";
+import ReactMarkdown from "react-markdown";
+import remarkGfm from "remark-gfm";
+import rehypeHighlight from "rehype-highlight";
+import "highlight.js/styles/github-dark.css";
 
 function Message({ message }) {
   if (message.role === "user") {
@@ -17,7 +21,15 @@ function Message({ message }) {
       </div>
       <div className="assistant-message-content">
         <span className="message-author">Forest</span>
-        <p>{message.content}</p>
+        {/* <p>{message.content}</p> */}
+         <div className="prose prose-invert max-w-none">
+      <ReactMarkdown
+        remarkPlugins={[remarkGfm]}
+        rehypePlugins={[rehypeHighlight]}
+      >
+        {message.content}
+      </ReactMarkdown>
+    </div>
         <div className="message-actions" aria-label="Message actions">
           <button type="button" aria-label="Copy response" title="Copy response">
             <WorkspaceIcon name="file" size={15} />
@@ -31,17 +43,22 @@ function Message({ message }) {
   );
 }
 
-function MessageComposer({ onSendMessage }) {
+function MessageComposer({ onSendMessage, isSendingMessage }) {
   const [value, setValue] = useState("");
   const inputRef = useRef(null);
 
-  const submitMessage = (event) => {
+  const submitMessage = async (event) => {
     event.preventDefault();
     const content = value.trim();
-    if (!content) return;
-    onSendMessage(content);
-    setValue("");
-    inputRef.current?.focus();
+    if (!content || isSendingMessage) return;
+    try {
+      await onSendMessage(content);
+      setValue("");
+    } catch {
+      return;
+    } finally {
+      inputRef.current?.focus();
+    }
   };
 
   return (
@@ -53,6 +70,7 @@ function MessageComposer({ onSendMessage }) {
         id="message-input"
         ref={inputRef}
         value={value}
+        disabled={isSendingMessage}
         onChange={(event) => setValue(event.target.value)}
         onKeyDown={(event) => {
           if (event.key === "Enter" && !event.shiftKey) {
@@ -85,7 +103,7 @@ function MessageComposer({ onSendMessage }) {
             type="submit"
             className="send-button"
             aria-label="Send message"
-            disabled={!value.trim()}
+            disabled={!value.trim() || isSendingMessage}
           >
             <WorkspaceIcon name="arrowUp" size={17} />
           </button>
@@ -102,6 +120,11 @@ export default function ConversationPanel({
   onToggleSidebar,
   onToggleArtifact,
   isArtifactOpen,
+  isLoadingMessages,
+  messagesError,
+  onRetryMessages,
+  isSendingMessage,
+  sendMessageError,
 }) {
   return (
     <div className="conversation-panel">
@@ -149,7 +172,18 @@ export default function ConversationPanel({
         aria-live="polite"
         aria-relevant="additions"
       >
-        {messages.length === 0 ? (
+        {isLoadingMessages ? (
+          <p className="message-state" aria-live="polite">
+            Loading messages…
+          </p>
+        ) : messagesError ? (
+          <div className="message-state" role="alert">
+            <p>{messagesError}</p>
+            <button className="workspace-button" onClick={onRetryMessages}>
+              Try again
+            </button>
+          </div>
+        ) : messages.length === 0 ? (
           <div className="empty-conversation">
             <span className="empty-conversation-icon">
               <WorkspaceIcon name="sparkle" size={23} />
@@ -167,7 +201,15 @@ export default function ConversationPanel({
       </section>
 
       <footer className="chat-footer">
-        <MessageComposer onSendMessage={onSendMessage} />
+        {sendMessageError && (
+          <p className="workspace-error" role="alert">
+            {sendMessageError}
+          </p>
+        )}
+        <MessageComposer
+          onSendMessage={onSendMessage}
+          isSendingMessage={isSendingMessage}
+        />
         <p className="chat-disclaimer">
           Forest can make mistakes. Check important information.
         </p>
